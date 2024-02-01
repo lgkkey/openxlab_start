@@ -21,7 +21,12 @@ import time
 # import wandb
 os.system("pip install nvidia-ml-py3")
 os.chdir(f"/home/xlab-app-center")
-os.system(f"git clone https://openi.pcl.ac.cn/lgkkey/sd-webui.git /home/xlab-app-center/stable-diffusion-webui")
+if(os.path.isdr("/home/xlab-app-center/stable-diffusion-webui"):
+    os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
+    os.system("git pull")
+else:
+    os.system(f"git clone https://openi.pcl.ac.cn/lgkkey/sd-webui.git /home/xlab-app-center/stable-diffusion-webui")
+os.chdir(f"/home/xlab-app-center")
 os.system(f"cp /home/xlab-app-center/styles.csv /home/xlab-app-center/stable-diffusion-webui/styles.csv")
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 os.system(f"git lfs install")
