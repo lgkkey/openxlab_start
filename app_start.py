@@ -21,7 +21,7 @@ import time
 # import wandb
 os.system("pip install nvidia-ml-py3")
 os.chdir(f"/home/xlab-app-center")
-if os.path.isdir("/home/xlab-app-center/stable-diffusion-webui":
+if os.path.isdir("/home/xlab-app-center/stable-diffusion-webui"):
     os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
     os.system("git pull")
 else:
