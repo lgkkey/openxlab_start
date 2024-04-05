@@ -19,6 +19,56 @@ import time
 # import wandb
 
 # import wandb
+install_path = '/home/xlab-app-center'
+rename_repo = 'stable-diffusion-webui'
+download_tool = 'aria2c --console-log-level=error -c -x 16 -s 16 -k 1M'
+
+def model_download(models, type_w):
+    for model in models:
+        try:
+            download_files(model, type_w)
+        except :
+            print(f'{model} 下载失败')
+
+def download_files(url, source):
+    curr_path=os.getcwd()
+    if '@' in url and (not url.startswith('http://') and not url.startswith('https://')):
+        parts = url.split('@', 1)
+        name = parts[0]
+        url = parts[1]
+        rename = f"-o '{name}'"
+        if 'huggingface.co' in url:
+            url = url.replace("huggingface.co", "hf-mirror.com")
+    else:
+        if ('huggingface.co' or 'hf-mirror.com' or 'huggingface.sukaka.top') in url:
+            url = url.replace("huggingface.co", "hf-mirror.com")
+            match_name = re.search(r'/([^/?]+)(?:\?download=true)?$', url).group(1)
+            if match_name:
+                rename = f"-o '{match_name}'"
+            else:
+                rename = ''
+        else:
+            rename = ''
+    source_dir = f'{install_path}/{rename_repo}/{source}'
+    os.makedirs(source_dir, exist_ok=True)
+    os.chdir(source_dir)
+    os.system(f"{download_tool} '{url}' {rename}")
+    os.chdir(curr_path)
+    
+
+
+
+def download_extensions(extensions):
+    os.chdir(f'{install_path}/{rename_repo}/extensions')
+    for extension in extensions:
+        os.system(f'git clone {extension}')
+
+
+
+
+
+
+
 os.system("pip install nvidia-ml-py3")
 os.chdir(f"/home/xlab-app-center")
 if os.path.isdir("/home/xlab-app-center/stable-diffusion-webui"):
@@ -31,7 +81,7 @@ os.system(f"cp /home/xlab-app-center/styles.csv /home/xlab-app-center/stable-dif
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 os.system(f"git lfs install")
 os.system(f"git reset --hard")
-os.chdir(f"/home/xlab-app-center/stable-diffusion-webui/extensions")
+
 
 plugins = [
     "https://openi.pcl.ac.cn/2575044704/stable-diffusion-webui-localization-zh_CN2",
@@ -46,8 +96,10 @@ plugins = [
 ]
 
 # https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors
-for plugin in plugins:
-    os.system(f"git clone {plugin}")
+
+download_extensions(plugins)
+
+
 os.makedirs('/home/xlab-app-center/stable-diffusion-webui/models/adetailer', exist_ok=True)
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui/models/adetailer")
 os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/Bingsu/adetailer/resolve/main/hand_yolov8s.pt -d /home/xlab-app-center/stable-diffusion-webui/models/adetailer -o hand_yolov8s.pt")
@@ -60,6 +112,51 @@ os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mir
 os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/sdxl-refiner-1.0/weight//sd_xl_refiner_1.0.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o sd_xl_refiner_1.0.safetensors")
 os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/cyber-realistic/weight//cyberrealistic_v32.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o cyberrealistic_v32.safetensors")
 os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o majicmixRealistic_v7.safetensors")
+
+
+
+
+# other model
+sd_models = [
+   "Anything_XL@https://civitai.com/api/download/models/384264?type=Model&format=SafeTensor&size=full&fp=fp16"
+]
+lora_models = [
+     "Labiaplasty_v2@https://civitai.com/api/download/models/182404?type=Model&format=SafeTensor"
+     
+]
+
+vae_models = []
+
+
+controlnet_models = [
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11e_sd15_ip2p_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11e_sd15_shuffle_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11f1p_sd15_depth_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_canny_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_inpaint_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_lineart_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_mlsd_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_normalbae_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_openpose_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_scribble_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15_softedge_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11p_sd15s2_lineart_anime_fp16.safetensors',
+'https://huggingface.co/comfyanonymous/ControlNet-v1-1_fp16_safetensors/resolve/main/control_v11u_sd15_tile_fp16.safetensors',
+'https://huggingface.co/DionTimmer/controlnet_qrcode-control_v1p_sd15/resolve/main/control_v1p_sd15_qrcode.safetensors',
+]
+embedding_models = [
+]
+hypernetwork_models = []
+
+esrgan_models = []
+model_download(controlnet_models, 'extensions/sd-webui-controlnet/models')
+model_download(sd_models, 'models/Stable-diffusion')
+model_download(lora_models, 'models/Lora')
+model_download(vae_models, 'models/VAE')
+model_download(hypernetwork_models, 'models/hypernetworks')
+model_download(embedding_models, 'embeddings')
+model_download(esrgan_models, 'models/ESRGAN')
+
 
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 print('webui launching...')
