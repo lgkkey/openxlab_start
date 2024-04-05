@@ -38,7 +38,7 @@ plugins = [
     "https://gitcode.net/ranting8323/multidiffusion-upscaler-for-automatic1111",
     "https://gitcode.net/ranting8323/adetailer",
     "https://gitcode.net/ranting8323/sd-webui-prompt-all-in-one",
-    "https://gitcode.net/ranting8323/sd-webui-inpaint-anything",
+    "https://github.com/Uminosachi/sd-webui-inpaint-anything.git",
     "https://gitcode.net/ranting8323/a1111-sd-webui-tagcomplete",
     "https://gitcode.net/nightaway/sd-webui-infinite-image-browsing",
     "https://openi.pcl.ac.cn/2575044704/sd-extension-system-info",
