@@ -56,7 +56,21 @@ def download_files(url, source):
     os.chdir(curr_path)
     
 
+def download_files_wget(url, source):
+    wget_tool="wget  -o "
+    curr_path=os.getcwd()
+    if '@' in url and (not url.startswith('http://') and not url.startswith('https://')):
+        parts = url.split('@', 1)
+        name = parts[0]
+        url = parts[1]
+        rename = name
 
+    source_dir = f'{install_path}/{rename_repo}/{source}'
+    os.makedirs(source_dir, exist_ok=True)
+    os.chdir(source_dir)
+    os.system(f"{wget_tool} {rename} '{url}'")
+    print(f"{wget_tool} {rename} '{url}' ")
+    os.chdir(curr_path)
 
 def download_extensions(extensions):
     os.chdir(f'{install_path}/{rename_repo}/extensions')
@@ -92,7 +106,9 @@ plugins = [
     "https://gitcode.net/ranting8323/a1111-sd-webui-tagcomplete",
     "https://gitcode.net/nightaway/sd-webui-infinite-image-browsing",
     "https://openi.pcl.ac.cn/2575044704/sd-extension-system-info",
-    "https://openi.pcl.ac.cn/2575044704/batchlinks-webui"
+    "https://openi.pcl.ac.cn/2575044704/batchlinks-webui",
+    'https://gitcode.com/Mikubill/sd-webui-controlnet',
+    "https://github.com/butaixianran/Stable-Diffusion-Webui-Civitai-Helper.git"
 ]
 
 # https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors
@@ -150,8 +166,8 @@ hypernetwork_models = []
 
 esrgan_models = []
 model_download(controlnet_models, 'extensions/sd-webui-controlnet/models')
-model_download(sd_models, 'models/Stable-diffusion')
-model_download(lora_models, 'models/Lora')
+download_files_wget(sd_models[0], 'models/Stable-diffusion')
+download_files_wget(lora_models[0], 'models/Lora')
 model_download(vae_models, 'models/VAE')
 model_download(hypernetwork_models, 'models/hypernetworks')
 model_download(embedding_models, 'embeddings')
