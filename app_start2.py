@@ -107,13 +107,15 @@ plugins = [
     "https://gitcode.net/nightaway/sd-webui-infinite-image-browsing",
     "https://openi.pcl.ac.cn/2575044704/sd-extension-system-info",
     "https://openi.pcl.ac.cn/2575044704/batchlinks-webui",
-    'https://gitcode.com/Mikubill/sd-webui-controlnet',
-    "https://github.com/butaixianran/Stable-Diffusion-Webui-Civitai-Helper.git"
+    'https://gitcode.com/Mikubill/sd-webui-controlnet.git'
 ]
-
+# 'https://github.com/Mikubill/sd-webui-controlnet.git' 
 # https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors
 
 download_extensions(plugins)
+os.chdir('/home/xlab-app-center/stable-diffusion-webui/extensions/sd-webui-controlnet')
+os.system("python -m pip install -r requirements.txt")
+
 
 
 os.makedirs('/home/xlab-app-center/stable-diffusion-webui/models/adetailer', exist_ok=True)
