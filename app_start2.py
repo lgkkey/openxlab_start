@@ -115,6 +115,7 @@ plugins = [
 download_extensions(plugins)
 os.chdir('/home/xlab-app-center/stable-diffusion-webui/extensions/sd-webui-controlnet')
 os.system("python -m pip install -r requirements.txt")
+os.system("python install.py")
 
 
 
