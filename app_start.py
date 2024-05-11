@@ -30,7 +30,7 @@ os.chdir(f"/home/xlab-app-center")
 os.system(f"cp /home/xlab-app-center/styles.csv /home/xlab-app-center/stable-diffusion-webui/styles.csv")
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 os.system(f"git lfs install")
-os.system(f"git reset --hard")
+# os.system(f"git reset --hard")
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui/extensions")
 
 plugins = [
@@ -201,13 +201,13 @@ def start():
     #    print(f"proxy An error occurred: {e}")
     try:
     #安装环境
-        os.system(f"python launch.py --api --xformers --exit --enable-insecure-extension-access --gradio-queue --disable-safe-unpickle")
+        # os.system(f"python launch.py --api --xformers --exit --enable-insecure-extension-access --gradio-queue --disable-safe-unpickle")
         #time.sleep(5)
         
         command = "python launch.py --api --xformers --ui-settings-file /home/xlab-app-center/config.json --ui-config-file /home/xlab-app-center/ui-config.json --gradio-queue --disable-safe-unpickle"
 
         
-        process = subprocess.Popen(command, shell=True)
+        # process = subprocess.Popen(command, shell=True)
         time.sleep(120)
         # os.system(f"{command} --port=7861 --ngrok=2KPyfzQrHit97J02tARy1ckHJYd_69rJbgjpjnVVeuXD3j9tv ")
         os.system(f"{command} --port=7861")
