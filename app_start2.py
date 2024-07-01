@@ -15,14 +15,90 @@ import threading
 import time
 import socket
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Process
 import time
-# import wandb
+try:
+    from git.repo import Repo
+    from git.repo.fun import is_git_dir
+except ImportError as e:
+    os.system("pip install gitpython")
+    from git.repo import Repo
+    from git.repo.fun import is_git_dir
 
 # import wandb
 install_path = '/home/xlab-app-center'
 rename_repo = 'stable-diffusion-webui'
 download_tool = 'aria2c --console-log-level=error -c -x 16 -s 16 -k 1M'
+package_envs = [
+    {"env": "STABLE_DIFFUSION_REPO", "url": os.environ.get('STABLE_DIFFUSION_REPO', "https://github.com/Stability-AI/stablediffusion.git")},
+    {"env": "STABLE_DIFFUSION_XL_REPO", "url": os.environ.get('STABLE_DIFFUSION_XL_REPO', "https://github.com/Stability-AI/generative-models.git")},
+    {"env": "K_DIFFUSION_REPO", "url": os.environ.get('K_DIFFUSION_REPO', "https://github.com/crowsonkb/k-diffusion.git")},
+    {"env": "CODEFORMER_REPO", "url": os.environ.get('CODEFORMER_REPO', "https://github.com/sczhou/CodeFormer.git")},
+    {"env": "BLIP_REPO", "url": os.environ.get('BLIP_REPO', "https://github.com/salesforce/BLIP.git")},
+]
+os.environ["PIP_INDEX_URL"] = "https://mirrors.aliyun.com/pypi/simple/"
+for i in package_envs:
+    os.environ[i["env"]] = i["url"]
 
+def gitUtils(repo_url,local_path,branch='',commit_hash="",tag="",recursive=False,update_last=False,check_commit=True):
+    print("repo_url:",repo_url,",clone path:",local_path,"==>start clone...")
+    try:
+        repo=None
+        if not os.path.exists(local_path):
+            os.makedirs(local_path)
+        git_local_path = os.path.join(local_path, '.git')   
+        if not is_git_dir(git_local_path):
+            if branch=="":
+                repo = Repo.clone_from(repo_url, to_path=local_path,recursive=recursive)
+            else:
+                repo = Repo.clone_from(repo_url, to_path=local_path, branch=branch,recursive=recursive)
+        else:
+            repo = Repo(local_path)
+        if not  update_last:    
+            if branch=="":
+                branch=repo.active_branch.name
+            else:
+                if (repo.active_branch.name!=branch):
+                    repo.git.checkout(branch)
+            if(commit_hash!=''):
+                try:
+                    if (check_commit and repo.active_branch.commit.hexsha!=commit_hash):
+                        repo.git.reset('--hard', commit_hash)
+                    else:
+                        repo.git.reset('--hard', commit_hash)
+                except Exception as e:
+                    print(f"commit_hash:{commit_hash} not found,use default branch:{branch}")
+            elif(tag!=''):
+                find_it=""
+                for tag_ in repo.tags:
+                    if tag_.name==tag:
+                        find_it=tag
+                        if (check_commit and tag_.commit.hexsha!=repo.active_branch.commit.hexsha):
+                            repo.git.checkout(tag_.name)
+                            break
+                        else:
+                            repo.git.checkout(tag_.name)
+                            break
+                
+                tag=find_it
+        else:
+            repo.head.reset(commit=repo.active_branch.commit, index=True, working_tree=True)
+            repo.git.pull()
+            
+        if (len(repo.submodules)>0):
+            repo.submodule_update(init=True,recursive=True)
+
+
+        print(f"finish clone: {repo_url} ,save to: {local_path}")
+        print(f"curr info: branch:{repo.active_branch.name}")
+        print(f"         : tag:{tag}")
+        print(f"         : submodule:{len(repo.submodules)}")
+        print(f"         : commit_hash:{repo.head.commit.hexsha}")   
+    except Exception as e: 
+        print("down error:\n",e)
+        print("try to use git cmd")
+        os.system(f"git clone {repo_url} {local_path}")
+         
 def model_download(models, type_w):
     for model in models:
         try:
@@ -73,24 +149,26 @@ def download_files_wget(url, source):
     os.chdir(curr_path)
 
 def download_extensions(extensions):
-    os.chdir(f'{install_path}/{rename_repo}/extensions')
+    git_local_path = os.path.join(install_path, rename_repo, 'extensions')
+    os.chdir(git_local_path)
     for extension in extensions:
-        os.system(f'git clone {extension}')
-
-
-
-
-
+        # os.system(f'git clone {extension}')
+        try:
+            gitUtils(extension.get("repo_url"),os.path.join(git_local_path,extension.get("save_name")),
+                    branch=extension.get("branch",""),
+                    commit_hash=extension.get("commit_hash",""),
+                    tag=extension.get("tag",""),
+                    recursive=extension.get("recursive",False),
+                    update_last=extension.get("update_last",False),
+                    check_commit=extension.get("check_commit",True)
+                    )
+        except Exception as e:
+            print(f"{extension.get('repo_url')} clone error:\n",e)
 
 
 os.system("pip install nvidia-ml-py3")
 os.chdir(f"/home/xlab-app-center")
-if os.path.isdir("/home/xlab-app-center/stable-diffusion-webui"):
-    os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
-    os.system("git pull")
-else:
-    os.system(f"git clone https://openi.pcl.ac.cn/lgkkey/sd-webui.git /home/xlab-app-center/stable-diffusion-webui")
-os.chdir(f"/home/xlab-app-center")
+gitUtils(f"https://openi.pcl.ac.cn/lgkkey/sd-webui.git",f"/home/xlab-app-center/stable-diffusion-webui",recursive=True,update_last=True)
 os.system(f"cp /home/xlab-app-center/styles.csv /home/xlab-app-center/stable-diffusion-webui/styles.csv")
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 os.system(f"git lfs install")
@@ -98,42 +176,40 @@ os.system(f"git reset --hard")
 
 
 plugins = [
-    "https://openi.pcl.ac.cn/2575044704/stable-diffusion-webui-localization-zh_CN2",
-    "https://gitcode.net/ranting8323/multidiffusion-upscaler-for-automatic1111",
-    "https://gitcode.net/ranting8323/adetailer",
-    "https://gitcode.net/ranting8323/sd-webui-prompt-all-in-one",
-    "https://github.com/Uminosachi/sd-webui-inpaint-anything.git",
-    "https://gitcode.net/ranting8323/a1111-sd-webui-tagcomplete",
-    "https://gitcode.net/nightaway/sd-webui-infinite-image-browsing",
-    "https://openi.pcl.ac.cn/2575044704/sd-extension-system-info",
-    "https://openi.pcl.ac.cn/2575044704/batchlinks-webui",
-    'https://gitcode.com/Mikubill/sd-webui-controlnet.git'
+    {"repo_url":"https://openi.pcl.ac.cn/2575044704/stable-diffusion-webui-localization-zh_CN2","save_name":"stable-diffusion-webui-localization-zh_CN2","branch":"","commit_hash":"","tag":""},
+    {"repo_url":"https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111.git","save_name":"multidiffusion-upscaler-for-automatic1111","branch":"","commit_hash":"574a0963133a34815f65bfaf985c19de54fdf323","tag":""},
+    {"repo_url":"https://github.com/Bing-su/adetailer.git","save_name":"adetailer","branch":"","commit_hash":"a7d961131e879ea8a930034a21a2dee21b173e8c","tag":""},
+    {"repo_url":"https://github.com/Physton/sd-webui-prompt-all-in-one.git","save_name":"sd-webui-prompt-all-in-one","branch":"","commit_hash":"d69645e6a6701c5117e0a874d1ef80d5cb5d55cc","tag":""},
+    {"repo_url":"https://github.com/Uminosachi/sd-webui-inpaint-anything.git","save_name":"sd-webui-inpaint-anything","branch":"","commit_hash":"ae6cc075f6c0f0dc360f2998181f4f8cbebd3622","tag":""},
+    {"repo_url":"https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git","save_name":"a1111-sd-webui-tagcomplete","branch":"","commit_hash":"3ef2a7d206d95eefec4cc7950c8d3b940dc18f9f","tag":""},
+    {"repo_url":"https://github.com/zanllp/sd-webui-infinite-image-browsing.git","save_name":"sd-webui-infinite-image-browsing","branch":"","commit_hash":"83c8845e345bb9b0ec19f0e4a6164fea50fc3710","tag":""},
+    {"repo_url":"https://github.com/vladmandic/sd-extension-system-info.git","save_name":"sd-extension-system-info","branch":"","commit_hash":"c88e83d403e1cae478df870fa2dd277d2028dc34","tag":""},
+    # {"repo_url":"https://openi.pcl.ac.cn/2575044704/batchlinks-webui","save_name":"batchlinks-webui","branch":"","commit_hash":"","tag":""},
+    {"repo_url":"https://github.com/Mikubill/sd-webui-controlnet.git","save_name":"sd-webui-controlnet","branch":"","commit_hash":"8bbbd0e55ef6e5d71b09c2de2727b36e7bc825b0","tag":""},
 ]
 # 'https://github.com/Mikubill/sd-webui-controlnet.git' 
 # https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors
 
 download_extensions(plugins)
-os.chdir('/home/xlab-app-center/stable-diffusion-webui/extensions/sd-webui-controlnet')
-os.system("python -m pip install -r requirements.txt")
-os.system("python install.py")
 
 
+def down_adetailer_model():
+    print("down adteiler model")
+    os.makedirs('/home/xlab-app-center/stable-diffusion-webui/models/adetailer', exist_ok=True)
+    os.chdir(f"/home/xlab-app-center/stable-diffusion-webui/models/adetailer")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/Bingsu/adetailer/resolve/main/hand_yolov8s.pt -d /home/xlab-app-center/stable-diffusion-webui/models/adetailer -o hand_yolov8s.pt")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/Bingsu/adetailer/resolve/main/hand_yolov8n.pt -d /home/xlab-app-center/stable-diffusion-webui/models/adetailer -o hand_yolov8n.pt")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/kaggle/input/museum/131-half.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o 131-half.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/ba.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o ba.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/racaco2.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o racaco2.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/coinz/Add-detail/resolve/main/add_detail.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o add_detail.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/VASVASVAS/vae/resolve/main/pastel-waifu-diffusion.vae.pt -d /home/xlab-app-center/stable-diffusion-webui/models/VAE -o pastel-waifu-diffusion.vae.pt")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/sdxl-refiner-1.0/weight//sd_xl_refiner_1.0.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o sd_xl_refiner_1.0.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/cyber-realistic/weight//cyberrealistic_v32.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o cyberrealistic_v32.safetensors")
+    os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o majicmixRealistic_v7.safetensors")
+    print("finish adetailer model thread!!")
 
-os.makedirs('/home/xlab-app-center/stable-diffusion-webui/models/adetailer', exist_ok=True)
-os.chdir(f"/home/xlab-app-center/stable-diffusion-webui/models/adetailer")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/Bingsu/adetailer/resolve/main/hand_yolov8s.pt -d /home/xlab-app-center/stable-diffusion-webui/models/adetailer -o hand_yolov8s.pt")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/Bingsu/adetailer/resolve/main/hand_yolov8n.pt -d /home/xlab-app-center/stable-diffusion-webui/models/adetailer -o hand_yolov8n.pt")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/kaggle/input/museum/131-half.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o 131-half.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/ba.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o ba.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/ACCC1380/private-model/resolve/main/racaco2.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o racaco2.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/coinz/Add-detail/resolve/main/add_detail.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Lora -o add_detail.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/datasets/VASVASVAS/vae/resolve/main/pastel-waifu-diffusion.vae.pt -d /home/xlab-app-center/stable-diffusion-webui/models/VAE -o pastel-waifu-diffusion.vae.pt")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/sdxl-refiner-1.0/weight//sd_xl_refiner_1.0.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o sd_xl_refiner_1.0.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://download.openxlab.org.cn/models/camenduru/cyber-realistic/weight//cyberrealistic_v32.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o cyberrealistic_v32.safetensors")
-os.system(f"aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://hf-mirror.com/marcy1111/majicmixRealistic_v7/resolve/main/majicmixRealistic_v7.safetensors -d /home/xlab-app-center/stable-diffusion-webui/models/Stable-diffusion -o majicmixRealistic_v7.safetensors")
-
-
-
+Process(target=down_adetailer_model).start()
 
 # other model
 sd_models = [
@@ -168,7 +244,14 @@ embedding_models = [
 hypernetwork_models = []
 
 esrgan_models = []
-model_download(controlnet_models, 'extensions/sd-webui-controlnet/models')
+
+if os.path.isfile("/home/xlab-app-center/stable-diffusion-webui/extensions/sd-webui-controlnet/requirements.txt"):
+    os.chdir('/home/xlab-app-center/stable-diffusion-webui/extensions/sd-webui-controlnet')
+    os.system("python -m pip install -r requirements.txt")
+    os.system("python install.py")
+    p1=Process(target=model_download,args=(controlnet_models,'extensions/sd-webui-controlnet/models'))
+    p1.start()
+# model_download(controlnet_models, 'extensions/sd-webui-controlnet/models')
 download_files_wget(sd_models[0], 'models/Stable-diffusion')
 download_files_wget(lora_models[0], 'models/Lora')
 model_download(vae_models, 'models/VAE')
@@ -179,16 +262,7 @@ model_download(esrgan_models, 'models/ESRGAN')
 
 os.chdir(f"/home/xlab-app-center/stable-diffusion-webui")
 print('webui launching...')
-package_envs = [
-    {"env": "STABLE_DIFFUSION_REPO", "url": os.environ.get('STABLE_DIFFUSION_REPO', "https://gitcode.net/overbill1683/stablediffusion")},
-    {"env": "STABLE_DIFFUSION_XL_REPO", "url": os.environ.get('STABLE_DIFFUSION_XL_REPO', "https://gitcode.net/overbill1683/generative-models")},
-    {"env": "K_DIFFUSION_REPO", "url": os.environ.get('K_DIFFUSION_REPO', "https://gitcode.net/overbill1683/k-diffusion")},
-    {"env": "CODEFORMER_REPO", "url": os.environ.get('CODEFORMER_REPO', "https://gitcode.net/overbill1683/CodeFormer")},
-    {"env": "BLIP_REPO", "url": os.environ.get('BLIP_REPO', "https://gitcode.net/overbill1683/BLIP")},
-]
-os.environ["PIP_INDEX_URL"] = "https://mirrors.aliyun.com/pypi/simple/"
-for i in package_envs:
-    os.environ[i["env"]] = i["url"]
+
 
 # WandB登录
 # os.system('wandb login 5c00964de1bb95ec1ab24869d4c523c59e0fb8e3')
