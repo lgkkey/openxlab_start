@@ -177,7 +177,7 @@ os.system(f"git reset --hard")
 
 
 plugins = [
-    {"repo_url":"https://openi.pcl.ac.cn/2575044704/stable-diffusion-webui-localization-zh_CN2","save_name":"stable-diffusion-webui-localization-zh_CN2","branch":"","commit_hash":"","tag":""},
+    {"repo_url":"https://github.com/dtlnor/stable-diffusion-webui-localization-zh_CN.git","save_name":"stable-diffusion-webui-localization-zh_CN","branch":"","commit_hash":"3dcbb1fe390950e09b752a2d126158807520f831","tag":""},
     {"repo_url":"https://github.com/pkuliyi2015/multidiffusion-upscaler-for-automatic1111.git","save_name":"multidiffusion-upscaler-for-automatic1111","branch":"","commit_hash":"574a0963133a34815f65bfaf985c19de54fdf323","tag":""},
     {"repo_url":"https://github.com/Bing-su/adetailer.git","save_name":"adetailer","branch":"","commit_hash":"a7d961131e879ea8a930034a21a2dee21b173e8c","tag":""},
     {"repo_url":"https://github.com/Physton/sd-webui-prompt-all-in-one.git","save_name":"sd-webui-prompt-all-in-one","branch":"","commit_hash":"d69645e6a6701c5117e0a874d1ef80d5cb5d55cc","tag":""},
@@ -418,4 +418,8 @@ start_thread.start()
 start_thread.join()
 
 while True:
+    # start_thread = threading.Thread(target=start)
+    # start_thread.start()
+    # start_thread.join()
+    print("-",end="")
     time.sleep(10000)
