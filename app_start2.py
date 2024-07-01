@@ -133,7 +133,7 @@ def download_files(url, source):
     
 
 def download_files_wget(url, source):
-    wget_tool="wget  -o "
+    wget_tool="wget -c -o "
     curr_path=os.getcwd()
     if '@' in url and (not url.startswith('http://') and not url.startswith('https://')):
         parts = url.split('@', 1)
@@ -144,8 +144,9 @@ def download_files_wget(url, source):
     source_dir = f'{install_path}/{rename_repo}/{source}'
     os.makedirs(source_dir, exist_ok=True)
     os.chdir(source_dir)
+    print(f"do: {wget_tool} {rename} '{url}' ")
     os.system(f"{wget_tool} {rename} '{url}'")
-    print(f"{wget_tool} {rename} '{url}' ")
+    print(f"{wget_tool} {rename} '{url}' finish")
     os.chdir(curr_path)
 
 def download_extensions(extensions):
