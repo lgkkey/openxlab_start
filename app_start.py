@@ -210,7 +210,7 @@ def start():
         process = subprocess.Popen(command, shell=True)
         time.sleep(120)
         # os.system(f"{command} --port=7861 --ngrok=2KPyfzQrHit97J02tARy1ckHJYd_69rJbgjpjnVVeuXD3j9tv ")
-        os.system(f"{command} --port=7861")
+        # os.system(f"{command} --port=7861")
     except Exception as e:
         # 在这里处理异常的代码
         print(f"启动SD发生错误: {e}")
